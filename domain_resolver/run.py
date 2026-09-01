@@ -4,13 +4,14 @@ import argparse
 from pathlib import Path
 
 from .csv_io import read_unique_brands, write_results
-from .discovery import SerperProvider, discover_candidates
+from .discovery import SearchProvider, SerperProvider, discover_candidates
 from .normalizer import normalize_brand
 from .scorer import score_candidate
 from .validator import validate_site
+from .providers import StaticProvider
 
 
-def resolve_brand(brand: str, provider: SerperProvider) -> dict:
+def resolve_brand(brand: str, provider: SearchProvider) -> dict:
     candidates = discover_candidates(brand, provider)
     scored = []
     for candidate in candidates:
@@ -42,18 +43,12 @@ def resolve_brand(brand: str, provider: SerperProvider) -> dict:
     }
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Resolve SmartScout brands to official domains")
-    parser.add_argument("input_csv", type=Path)
-    parser.add_argument("output_csv", type=Path)
-    parser.add_argument("--brand-column", default="Brand")
-    parser.add_argument("--limit", type=int, default=0, help="Resolve only the first N unique brands (0 = all)")
-    args = parser.parse_args()
-
-    provider = SerperProvider()
-    brands = read_unique_brands(args.input_csv, args.brand_column)
-    if args.limit:
-        brands = brands[:args.limit]
+def run(input_csv: Path | None, output_csv: Path | None, provider: SearchProvider, brand_column: str, limit: int = 0) -> None:
+    if input_csv is None:
+        raise ValueError("An input CSV is required unless --demo is used.")
+    brands = read_unique_brands(input_csv, brand_column)
+    if limit:
+        brands = brands[:limit]
 
     results = []
     for i, brand in enumerate(brands, 1):
@@ -62,16 +57,37 @@ def main() -> None:
             results.append(resolve_brand(brand, provider))
         except Exception as exc:
             results.append({
-                "brand": brand,
-                "brand_normalized": normalize_brand(brand),
+                "brand": brand, "brand_normalized": normalize_brand(brand),
                 "domain": "", "confidence": 0, "status": "ERROR",
                 "source": "", "reason": str(exc),
                 "evidence_urls": "", "candidate_count": 0,
             })
+    write_results(output_csv, results)
+    print(f"Wrote {len(results)} results to {output_csv}")
 
-    write_results(args.output_csv, results)
-    print(f"Wrote {len(results)} results to {args.output_csv}")
+
+def demo() -> None:
+    data = {
+        '"Chefman" official website': [SearchResult("Chefman | Kitchen Appliances", "https://chefman.com/", "Official Chefman kitchen appliances")],
+        '"Chefman" Amazon brand website': [SearchResult("Chefman Amazon", "https://www.amazon.com/stores/Chefman", "Chefman brand")],
+        '"Chefman" company website': [SearchResult("Chefman", "https://chefman.com/", "Kitchen products")],
+    }
+    result = resolve_brand("Chefman", StaticProvider(data))
+    print(result)
 
 
 if __name__ == "__main__":
-    main()
+    from .discovery import SearchResult
+
+    parser = argparse.ArgumentParser(description="SalesDuo domain resolver")
+    parser.add_argument("input_csv", nargs="?", type=Path)
+    parser.add_argument("output_csv", nargs="?", type=Path)
+    parser.add_argument("--brand-column", default="Brand")
+    parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument("--demo", action="store_true", help="Run the offline smoke test; no API key required")
+    args = parser.parse_args()
+
+    if args.demo:
+        demo()
+    else:
+        run(args.input_csv, args.output_csv, SerperProvider(), args.brand_column, args.limit)
