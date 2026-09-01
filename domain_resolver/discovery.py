@@ -5,9 +5,12 @@ import re
 from dataclasses import dataclass
 
 import httpx
+from dotenv import load_dotenv
 
 from .models import BrandContext, CandidateDomain
 from .normalizer import normalize_brand
+
+load_dotenv()
 
 
 @dataclass
