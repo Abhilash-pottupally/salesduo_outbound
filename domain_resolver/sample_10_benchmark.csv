@@ -1,0 +1,11 @@
+brand,category,primary_campaign,domain,confidence,status,source,reason,evidence_urls
+DIVI,Beauty & Personal Care,1 - PPC Placement Opportunity,diviofficial.com,99,ACCEPTED,official_website,Official Divi site matches the brand and scalp/hair product category.,https://www.diviofficial.com/
+RAZCC,Office Products,1 - PPC Placement Opportunity,,55,NOT_FOUND,web_research,Amazon/marketplace evidence confirms the brand but no official domain was confidently established.,https://www.findthisbest.com/brand/880222-razcc
+Chefman,Kitchen & Dining,1 - PPC Placement Opportunity,chefman.com,99,ACCEPTED,official_website,Official Chefman site matches the brand and kitchen products.,https://chefman.com/
+Maple Holistics,Beauty & Personal Care,1 - PPC Placement Opportunity,mapleholistics.com,99,ACCEPTED,official_website,Official site matches the brand and hair/skin/body products.,https://mapleholistics.com/
+True Fresh,Health & Household,3 - Video Creative Intent,true-fresh.com,99,ACCEPTED,official_website,Official site matches True Fresh washing-machine cleaning products; supplier evidence also identifies Smart Vision LLC.,https://true-fresh.com/
+HyperX,Video Games,2 - Heavy Amazon Advertiser,hyperx.com,99,ACCEPTED,official_website,Official HyperX US site matches the gaming brand and products.,https://hyperx.com/
+Neuro,Grocery & Gourmet Food,3 - Video Creative Intent,neurogum.com,99,ACCEPTED,official_website,Official Neuro site matches the gum and mints brand.,https://neurogum.com/
+VitaCup,Grocery & Gourmet Food,1 - PPC Placement Opportunity,vitacup.com,99,ACCEPTED,official_website,Official VitaCup site matches the functional coffee/tea brand.,https://www.vitacup.com/
+Frontline,Pet Supplies,1 - PPC Placement Opportunity,frontline.com,98,ACCEPTED,official_website,FRONTLINE pet flea/tick brand is documented as using frontline.com; generic-name risk requires brand/category validation.,https://frontline.com/
+Honey Stinger,Health & Household,3 - Video Creative Intent,honeystinger.com,99,ACCEPTED,official_website,Official Honey Stinger site matches the sports nutrition brand.,https://honeystinger.com/
