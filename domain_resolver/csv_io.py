@@ -44,7 +44,6 @@ def read_unique_rows(path: Path, brand_column: str = "Brand", limit: int = 0) ->
 
 def write_clean_rows(path: Path, rows: list[dict], fields: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    # Drop unnamed/blank headers from the exported CSV while preserving real columns.
     fields = [f for f in fields if f and not f.startswith("Unnamed")]
     with path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
@@ -57,6 +56,7 @@ def write_results(path: Path, results: list[dict]) -> None:
     fields = [
         "brand", "brand_normalized", "domain", "confidence", "status",
         "source", "reason", "evidence_urls", "candidate_count",
+        "signals", "contradictions",
     ]
     with path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
