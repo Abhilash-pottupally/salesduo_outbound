@@ -52,15 +52,26 @@ def write_clean_rows(path: Path, rows: list[dict], fields: list[str]) -> None:
 
 
 def write_results(path: Path, results: list[dict]) -> None:
+    """Write resolver results while preserving all original SmartScout columns."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    fields = [
+
+    resolver_fields = [
         "brand", "brand_normalized", "domain", "confidence", "status",
         "source", "reason", "evidence_urls", "candidate_count",
         "signals", "contradictions",
-        "category", "subcategory", "monthly_revenue", "total_ad_spend",
-        "placement_gap", "heavy_advertiser", "video_intent", "multi_format",
-        "high_ad_spend_ratio", "primary_campaign",
     ]
+
+    # Preserve every SmartScout field exactly as supplied, including the
+    # user's existing bucket/classification columns. The resolver can use
+    # these as context but does not invent or overwrite them.
+    original_fields: list[str] = []
+    for result in results:
+        for field in result.keys():
+            if field and not field.startswith("Unnamed") and field not in original_fields:
+                original_fields.append(field)
+
+    fields = resolver_fields + [f for f in original_fields if f not in resolver_fields]
+
     with path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
