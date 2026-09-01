@@ -9,17 +9,12 @@ def _terms(value: str) -> set[str]:
     return {x for x in re.findall(r"[a-z0-9]+", (value or "").lower()) if len(x) > 2}
 
 
-def score_candidate(
-    candidate: CandidateDomain,
-    brand: str,
-    site_evidence: dict | None = None,
-    context: BrandContext | None = None,
-) -> CandidateDomain:
-    """Conservative identity scoring using site evidence and SmartScout context."""
+def score_candidate(candidate: CandidateDomain, brand: str, site_evidence: dict | None = None, context: BrandContext | None = None) -> CandidateDomain:
+    """Conservative identity scoring using search, site, and SmartScout evidence."""
     site_evidence = site_evidence or {}
     context = context or BrandContext(brand=brand)
-    score = 0
-    signals: list[str] = []
+    score = candidate.score
+    signals: list[str] = list(candidate.signals)
     contradictions: list[str] = []
 
     brand_terms = _terms(brand)
@@ -75,8 +70,8 @@ def score_candidate(
         contradictions.append("site_appears_unrelated_to_smartscout_category")
 
     candidate.score = min(100, max(0, score))
-    candidate.signals = signals
-    candidate.contradictions = contradictions
+    candidate.signals = sorted(set(signals))
+    candidate.contradictions = sorted(set(contradictions))
     if candidate.score >= 90:
         candidate.reason = "High-confidence candidate based on multiple identity signals."
     elif candidate.score >= 75:
