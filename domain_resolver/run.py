@@ -63,6 +63,19 @@ def resolve_brand(brand: str, provider: SearchProvider, context: BrandContext | 
     }
 
 
+def merge_smartscout_data(row: dict, result: dict) -> dict:
+    """Keep the complete original SmartScout row alongside resolver fields.
+
+    SmartScout's existing campaign/bucket columns are preserved as-is; the
+    resolver does not invent replacement buckets. This keeps the output useful
+    for downstream Apollo enrichment and campaign generation.
+    """
+    merged = dict(row)
+    # Resolver fields intentionally overwrite only resolver-owned fields.
+    merged.update(result)
+    return merged
+
+
 def run(input_csv: Path, output_csv: Path, provider: SearchProvider, brand_column: str, limit: int = 0) -> None:
     rows, _ = read_unique_rows(input_csv, brand_column, limit)
     results = []
@@ -70,13 +83,15 @@ def run(input_csv: Path, output_csv: Path, provider: SearchProvider, brand_colum
         brand = (row.get(brand_column) or "").strip()
         print(f"[{i}/{len(rows)}] {brand}")
         try:
-            results.append(resolve_brand(brand, provider, context_from_row(row, brand_column)))
+            result = resolve_brand(brand, provider, context_from_row(row, brand_column))
+            results.append(merge_smartscout_data(row, result))
         except Exception as exc:
-            results.append({
+            error_result = {
                 "brand": brand, "brand_normalized": normalize_brand(brand), "domain": "",
                 "confidence": 0, "status": "ERROR", "source": "", "reason": str(exc),
                 "evidence_urls": "", "candidate_count": 0, "signals": "", "contradictions": str(exc),
-            })
+            }
+            results.append(merge_smartscout_data(row, error_result))
     write_results(output_csv, results)
     print(f"Wrote {len(results)} results to {output_csv}")
 
