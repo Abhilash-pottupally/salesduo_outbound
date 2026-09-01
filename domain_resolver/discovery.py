@@ -3,11 +3,10 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass
-from typing import Iterable
 
 import httpx
 
-from .models import CandidateDomain
+from .models import BrandContext, CandidateDomain
 from .normalizer import normalize_brand
 
 
@@ -24,10 +23,7 @@ class SearchProvider:
 
 
 class SerperProvider(SearchProvider):
-    """Optional Google-results provider using SERPER_API_KEY.
-
-    Kept behind an interface so the resolver is not coupled to one vendor.
-    """
+    """Google-results provider using SERPER_API_KEY."""
 
     endpoint = "https://google.serper.dev/search"
 
@@ -61,30 +57,44 @@ def _domain_from_url(url: str) -> str | None:
     return match.group(1) if match else None
 
 
-def discover_candidates(brand: str, provider: SearchProvider, limit: int = 5) -> list[CandidateDomain]:
-    """Discover candidate domains from several evidence-oriented queries."""
+def _blocked_domain(domain: str) -> bool:
+    blocked = (
+        "google.com", "amazon.com", "wikipedia.org", "facebook.com",
+        "instagram.com", "linkedin.com", "youtube.com", "tiktok.com",
+        "pinterest.com", "x.com", "twitter.com", "reddit.com",
+    )
+    return domain == "amazon.com" or domain.endswith(blocked)
+
+
+def discover_candidates(
+    brand: str,
+    provider: SearchProvider,
+    context: BrandContext | None = None,
+    limit: int = 5,
+) -> list[CandidateDomain]:
+    """Discover candidates using independent identity and category searches."""
+    context = context or BrandContext(brand=brand)
     queries = [
         f'"{brand}" official website',
-        f'"{brand}" Amazon brand website',
         f'"{brand}" company website',
+        f'"{brand}" Amazon brand website',
     ]
+    if context.category or context.subcategory:
+        category_hint = " ".join(x for x in [context.category, context.subcategory] if x)
+        queries.append(f'"{brand}" "{category_hint}"')
+
     seen: dict[str, CandidateDomain] = {}
     brand_norm = normalize_brand(brand)
 
     for query in queries:
         for result in provider.search(query, limit=limit):
             domain = _domain_from_url(result.url)
-            if not domain:
+            if not domain or _blocked_domain(domain):
                 continue
-            # Ignore obvious search/social/marketplace hosts as final candidates.
-            if domain.endswith(("google.com", "amazon.com", "wikipedia.org", "facebook.com", "instagram.com", "linkedin.com", "youtube.com")):
-                continue
-            candidate = seen.setdefault(
-                domain,
-                CandidateDomain(domain=domain, source="search", evidence=[]),
-            )
+            candidate = seen.setdefault(domain, CandidateDomain(domain=domain, source="search", evidence=[]))
             candidate.evidence.append(f"{query}: {result.title} — {result.snippet}")
-            if brand_norm in normalize_brand(result.title):
+            if brand_norm and brand_norm in normalize_brand(result.title):
                 candidate.score += 15
+                candidate.signals.append("brand_in_search_title")
 
     return list(seen.values())
