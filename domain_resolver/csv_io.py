@@ -57,6 +57,9 @@ def write_results(path: Path, results: list[dict]) -> None:
         "brand", "brand_normalized", "domain", "confidence", "status",
         "source", "reason", "evidence_urls", "candidate_count",
         "signals", "contradictions",
+        "category", "subcategory", "monthly_revenue", "total_ad_spend",
+        "placement_gap", "heavy_advertiser", "video_intent", "multi_format",
+        "high_ad_spend_ratio", "primary_campaign",
     ]
     with path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
