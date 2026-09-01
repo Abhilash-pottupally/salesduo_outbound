@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from .csv_io import read_unique_brands, read_unique_rows, write_clean_rows, write_results
+from .csv_io import read_unique_rows, write_clean_rows, write_results
 from .discovery import SearchProvider, SearchResult, SerperProvider, discover_candidates
 from .models import BrandContext
 from .normalizer import normalize_brand
@@ -12,9 +12,9 @@ from .validator import validate_site
 from .providers import StaticProvider
 
 
-def context_from_row(row: dict) -> BrandContext:
+def context_from_row(row: dict, brand_column: str = "Brand") -> BrandContext:
     return BrandContext(
-        brand=(row.get("Brand") or "").strip(),
+        brand=(row.get(brand_column) or "").strip(),
         category=(row.get("Category") or "").strip(),
         subcategory=(row.get("Primary Subcategory") or "").strip(),
         monthly_revenue=(row.get("Monthly Revenue") or "").strip(),
@@ -30,7 +30,7 @@ def context_from_row(row: dict) -> BrandContext:
 
 def resolve_brand(brand: str, provider: SearchProvider, context: BrandContext | None = None) -> dict:
     context = context or BrandContext(brand=brand)
-    candidates = discover_candidates(brand, provider)
+    candidates = discover_candidates(brand, provider, context=context)
     scored = []
     for candidate in candidates:
         site = validate_site(candidate.domain, brand)
@@ -70,12 +70,12 @@ def run(input_csv: Path, output_csv: Path, provider: SearchProvider, brand_colum
         brand = (row.get(brand_column) or "").strip()
         print(f"[{i}/{len(rows)}] {brand}")
         try:
-            results.append(resolve_brand(brand, provider, context_from_row(row)))
+            results.append(resolve_brand(brand, provider, context_from_row(row, brand_column)))
         except Exception as exc:
             results.append({
                 "brand": brand, "brand_normalized": normalize_brand(brand), "domain": "",
                 "confidence": 0, "status": "ERROR", "source": "", "reason": str(exc),
-                "evidence_urls": "", "candidate_count": 0, "signals": "", "contradictions": "",
+                "evidence_urls": "", "candidate_count": 0, "signals": "", "contradictions": str(exc),
             })
     write_results(output_csv, results)
     print(f"Wrote {len(results)} results to {output_csv}")
